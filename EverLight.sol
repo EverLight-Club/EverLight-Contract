@@ -7,7 +7,8 @@ import './utils/Strings.sol';
 import './utils/Address.sol';
 
 import './interfaces/IERC20.sol';
-import './interfaces/IERC721.sol';
+import './interfaces/IERC721Proxy.sol';
+import "./interfaces/IERC721.sol";
 import './interfaces/IEverLight.sol';
 import './interfaces/LibEverLight.sol';
 
@@ -16,7 +17,7 @@ contract EverLight is Ownable, IEverLight {
   using Address for address;
   using Strings for uint256;
 
-  address _tokenAddress;                                     // address of 721 token      
+  IERC721Proxy public _erc721Proxy;                          // address of 721 token      
   
   LibEverLight.Configurations _config;                       // all configurations
   LibEverLight.PartsInfo _partsInfo;                         // all parts informations
@@ -38,6 +39,22 @@ contract EverLight is Ownable, IEverLight {
     // _config._totalSuitNum = 0;
     _config._maxPosition = 11;
     _config._luckyStonePrice = 2000;
+  }
+
+  function queryTokenType(uint256 tokenId) external view override returns (uint8 tokenType) {
+    if(_tokenList[tokenId]._tokenId == tokenId){
+      if(_tokenList[tokenId]._position == 99){
+        return 3;
+      }
+      return 2;
+    }
+    if(_characterList[tokenId]._tokenId == tokenId){
+      return 1;
+    }
+  }
+
+  function queryColorByRare(uint8 rare) external view override returns (string memory color) {
+    return _partsInfo._rareColor[rare];
   }
 
   function queryAccount(address owner) external view override returns (LibEverLight.Account memory account) {
@@ -110,11 +127,11 @@ contract EverLight is Ownable, IEverLight {
     _config._totalDecrTimes += decrTimes;
 
     // mint nft
-    IERC721((_tokenAddress)._safeMint(tx.origin, characterId);
+    _erc721Proxy.mintBy(tx.origin, characterId);
   }
 
   function wear(uint256 characterId, uint256[] memory tokenList) external override {
-    require(_characterOwnOf(characterId) == tx.origin, "Not owner");
+    require(_characterOwnOf(characterId) == tx.origin, "character not owner");
     require(tokenList.length > 0, "Empty token");
     
     // create new character
@@ -127,7 +144,7 @@ contract EverLight is Ownable, IEverLight {
         continue;
       }
 
-      require(_tokenOwnOf(tokenList[i]) == tx.origin, "Not owner");
+      require(_tokenOwnOf(tokenList[i]) == tx.origin, "parts not owner");
       require(_tokenList[tokenList[i]]._wearToken == 0, "Token weared");
 
       // wear parts
@@ -136,21 +153,21 @@ contract EverLight is Ownable, IEverLight {
 
       _characterList[newCharacterId]._tokenList[position] = tokenList[i];
       _tokenList[tokenList[i]]._wearToken = newCharacterId;
-      IERC721((_tokenAddress)._burn(tokenList[i]);
+      _erc721Proxy.burnBy(tokenList[i]);
 
       // mint weared parts
       if (partsId != 0) {
         _tokenList[partsId]._wearToken = 0;
-        IERC721((_tokenAddress)._safeMint(tx.origin, partsId);
+        _erc721Proxy.mintBy(tx.origin, partsId);
       }
     }
 
     // burn old token and remint character 
-    IERC721((_tokenAddress)._burn(characterId);
+    _erc721Proxy.burnBy(characterId);
     delete _characterList[characterId];
 
     _characterList[newCharacterId]._totalPower = _calcTotalPower(newCharacterId);
-    IERC721((_tokenAddress)._safeMint(tx.origin, newCharacterId);
+    _erc721Proxy.mintBy(tx.origin, newCharacterId);
   }
 
   function takeOff(uint256 characterId, uint8[] memory positions) external override {
@@ -172,15 +189,15 @@ contract EverLight is Ownable, IEverLight {
 
       _characterList[newCharacterId]._tokenList[positions[i]] = 0;
       _tokenList[partsId]._wearToken = 0;
-      IERC721((_tokenAddress)._safeMint(tx.origin, partsId);
+      _erc721Proxy.mintBy(tx.origin, partsId);
     }
 
     // burn old token and remint character 
-    IERC721((_tokenAddress)._burn(characterId);
+    _erc721Proxy.burnBy(characterId);
     delete _characterList[characterId];
 
     _characterList[newCharacterId]._totalPower = _calcTotalPower(newCharacterId);
-    IERC721((_tokenAddress)._safeMint(tx.origin, newCharacterId);
+    _erc721Proxy.mintBy(tx.origin, newCharacterId);
   }
 
   function upgradeToken(uint256 firstTokenId, uint256 secondTokenId) external override {
@@ -208,13 +225,13 @@ contract EverLight is Ownable, IEverLight {
                                                     _tokenList[firstTokenId]._level + 1, false, 0);
 
     // remove old token
-    IERC721((_tokenAddress)._burn(firstTokenId);
+    _erc721Proxy.burnBy(firstTokenId);
     delete _tokenList[firstTokenId];
-    IERC721((_tokenAddress)._burn(secondTokenId);
+    _erc721Proxy.burnBy(secondTokenId);
     delete _tokenList[secondTokenId];
     
     // mint new token
-    IERC721((_tokenAddress)._safeMint(tx.origin, newTokenId);
+    _erc721Proxy.mintBy(tx.origin, newTokenId);
   }
 
   function upgradeWearToken(uint256 characterId, uint256 tokenId) external override {
@@ -250,14 +267,14 @@ contract EverLight is Ownable, IEverLight {
     _characterList[newCharacterId]._totalPower = _calcTotalPower(newCharacterId);
 
     // remove old parts
-    IERC721((_tokenAddress)._burn(tokenId);
+    _erc721Proxy.burnBy(tokenId);
     delete _tokenList[tokenId];
     delete _tokenList[partsId];
 
     // burn old token and remint character 
-    IERC721((_tokenAddress)._burn(characterId);
+    _erc721Proxy.burnBy(characterId);
     delete _characterList[characterId];
-    IERC721((_tokenAddress)._safeMint(tx.origin, newCharacterId);
+    _erc721Proxy.mintBy(tx.origin, newCharacterId);
   }
 
   function exchangeToken(uint32 mapId, uint256[] memory mapTokenList) external override {
@@ -270,7 +287,7 @@ contract EverLight is Ownable, IEverLight {
       // generate new token
       uint256 newTokenId = _genRandomToken(uint8(_getRandom(mapTokenList[i].toString()) % _config._maxPosition));
 
-      IERC721((_tokenAddress)._safeMint(tx.origin, newTokenId);
+      _erc721Proxy.mintBy(tx.origin, newTokenId);
     }
   }
 
@@ -286,7 +303,7 @@ contract EverLight is Ownable, IEverLight {
       uint256 newTokenId = ++_config._currentTokenId;
       (_tokenList[newTokenId]._tokenId, _tokenList[newTokenId]._owner, _tokenList[newTokenId]._position, _tokenList[newTokenId]._name) = (newTokenId, tx.origin, 99, "Lucky Stone");
 
-      IERC721((_tokenAddress)._safeMint(tx.origin, newTokenId);
+      _erc721Proxy.mintBy(tx.origin, newTokenId);
     }
   }
 
@@ -298,7 +315,7 @@ contract EverLight is Ownable, IEverLight {
       ++_accountList[tx.origin]._luckyNum;
 
       // burn luck stone token
-      IERC721((_tokenAddress)._burn(tokenId[i]);
+      _erc721Proxy.burnBy(tokenId[i]);
       delete _tokenList[tokenId[i]];
     }
   }
@@ -340,7 +357,7 @@ contract EverLight is Ownable, IEverLight {
         _tokenList[newTokenId] = LibEverLight.TokenInfo(newTokenId, tx.origin, position, rare, name, suitId, 
                                                     _partsInfo._partsPowerList[position][rare] + randPower, 1, false, 0);
 
-        IERC721((_tokenAddress)._safeMint(tx.origin, newTokenId);
+        _erc721Proxy.mintBy(tx.origin, newTokenId);
     }
 
     // update token and charactor information
@@ -351,8 +368,8 @@ contract EverLight is Ownable, IEverLight {
     if (_tokenList[newPartsTokenId]._wearToken != 0) {
       _characterList[_tokenList[newPartsTokenId]._wearToken]._tokenList[position] = newPartsTokenId;
     } else {
-      IERC721((_tokenAddress)._burn(tokenId);
-      IERC721((_tokenAddress)._safeMint(tx.origin, newPartsTokenId);
+      _erc721Proxy.burnBy(tokenId);
+      _erc721Proxy.mintBy(tx.origin, newPartsTokenId);
     }
 
     delete _tokenList[tokenId];
@@ -499,7 +516,7 @@ contract EverLight is Ownable, IEverLight {
 
   // governace functions
   function setELWTAddress(address tokenAddress) external onlyOwner {
-    _tokenAddress = tokenAddress;
+    _erc721Proxy = IERC721Proxy(tokenAddress);
   }
 
   function withdraw() external onlyOwner {
@@ -531,9 +548,9 @@ contract EverLight is Ownable, IEverLight {
     _partsInfo._partsCount[position] = uint32(_partsInfo._partsCount[position] + names.length);
   }
 
-  function setLuckStonePrice(uint32 price) external onlyOwner {
+  /*function setLuckStonePrice(uint32 price) external onlyOwner {
     _config._luckyStonePrice = price;
-  }
+  }*/
  
   function setMaxPosition(uint32 maxPosition) external onlyOwner {
     _config._maxPosition = maxPosition;
@@ -549,6 +566,10 @@ contract EverLight is Ownable, IEverLight {
   
   function addMapAddress(address mapAddress) external onlyOwner {
     _config._mapContracts.push(mapAddress);
+  }
+
+  function setERC721Proxy(address proxyAddress) external onlyOwner {
+    _erc721Proxy = IERC721Proxy(proxyAddress);
   }
 }
 

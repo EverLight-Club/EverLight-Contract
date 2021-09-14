@@ -5,11 +5,16 @@ import './LibEverLight.sol';
 
 interface IEverLight {
   // event list
-  event NewTokenType(address indexed creator, uint8  position, uint8 rare, string indexed name, uint256 suitId);
+  event NewTokenType(address indexed creator, uint8 position, uint8 rare, string indexed name, uint256 suitId);
 
   // read function list
+  function queryColorByRare(uint8 rare) external view returns (string memory color);
+
   function queryAccount(address owner) external view returns (LibEverLight.Account memory account);
 
+  // returns the type for tokenId(1 charactor, 2 parts, 3 lucklyStone)
+  function queryTokenType(uint256 tokenId) external view returns (uint8 tokenType);
+  
   function queryCharacter(uint256 characterId) external view returns (address owner, uint32 powerFactor, uint256[] memory tokenList, uint32 totalPower);
 
   function queryToken(uint256 tokenId) external view returns (LibEverLight.TokenInfo memory tokenInfo);
