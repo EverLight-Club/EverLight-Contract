@@ -94,12 +94,12 @@ contract EverLight is Ownable, IEverLight {
     return _partsInfo._nameFlag[uint256(keccak256(abi.encodePacked(name)))];
   }
 
-  function queryCharacterExtra(uint256 characterId, uint256 extraKey) external view returns (string memory) {
+  function queryCharacterExtra(uint256 characterId, uint256 extraKey) external view override returns (string memory) {
     require(_erc721Proxy.ownerOf(characterId) == tx.origin, "!owner");
     return _characterList[characterId]._extraList[extraKey];
   }
 
-  function setCharacterExtra(uint256 characterId, uint256 extraKey, string memory extraValue) external {
+  function setCharacterExtra(uint256 characterId, uint256 extraKey, string memory extraValue) external override {
     require(_erc721Proxy.ownerOf(characterId) == tx.origin, "!owner");
     _characterList[characterId]._extraList[extraKey] = extraValue;
   }
@@ -226,6 +226,7 @@ contract EverLight is Ownable, IEverLight {
     require(_tokenList[firstTokenId]._position == _tokenList[secondTokenId]._position, "Conflict token");
     require(_tokenList[firstTokenId]._rare == _tokenList[secondTokenId]._rare, "Conflict token");
     require(_tokenList[firstTokenId]._level < 9, "Max level");
+    
     require(_tokenList[firstTokenId]._wearToken == 0, "Weared token");
     require(_tokenList[secondTokenId]._wearToken == 0, "Weared token");
 
@@ -535,9 +536,9 @@ contract EverLight is Ownable, IEverLight {
   }
 
   // governace functions
-  function setELWTAddress(address tokenAddress) external onlyOwner {
+  /*function setELWTAddress(address tokenAddress) external onlyOwner {
     _erc721Proxy = IERC721Proxy(tokenAddress);
-  }
+  }*/
 
   function withdraw() external onlyOwner {
     payable(msg.sender).transfer(address(this).balance);

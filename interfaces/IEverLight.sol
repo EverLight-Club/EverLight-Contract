@@ -29,7 +29,11 @@ interface IEverLight {
 
   function isNameExist(string memory name) external view returns (bool result);
 
+  function queryCharacterExtra(uint256 characterId, uint256 extraKey) external view returns (string memory);
+
   // write function list
+  function setCharacterExtra(uint256 characterId, uint256 extraKey, string memory extraValue) external;
+
   function mint() external payable;
 
   function wear(uint256 characterId, uint256[] memory tokenList) external;
