@@ -69,7 +69,7 @@ contract ERC721Proxy is ERC721Enumerable, Ownable {
     }
     if(tokenType == 3){ // for luckyStone
       // ....
-      output = tokenURIForCharacter(tokenId);
+      output = tokenURIForParts(tokenId);
     }
     //
     string memory json = Base64.encode(bytes(string(abi.encodePacked('{"name": "Bag #', tokenId.toString(), '", "description": "EverLight description.", "image": "data:image/svg+xml;base64,', Base64.encode(bytes(output)), '"}'))));

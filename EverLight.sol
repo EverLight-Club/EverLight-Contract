@@ -343,8 +343,8 @@ contract EverLight is Ownable, IEverLight {
   function newTokenType(uint256 tokenId, string memory name, uint32 suitId) external override {
     //require(_tokenOwnOf(tokenId) == tx.origin, "Not owner");
     require(_erc721Proxy.ownerOf(tokenId) == tx.origin, "!owner");
-    require(_tokenList[tokenId]._level == 9, "No permission");
-    require(!_tokenList[tokenId]._createFlag, "No permission");
+    require(_tokenList[tokenId]._level == 9, "level != 9");
+    require(!_tokenList[tokenId]._createFlag, "createFlag=true");
     require(bytes(name).length <= 16, "Error name");
 
     // create new parts type
@@ -571,9 +571,9 @@ contract EverLight is Ownable, IEverLight {
     _partsInfo._partsCount[position] = uint32(_partsInfo._partsCount[position] + names.length);
   }
 
-  /*function setLuckStonePrice(uint32 price) external onlyOwner {
+  function setLuckStonePrice(uint32 price) external onlyOwner {
     _config._luckyStonePrice = price;
-  }*/
+  }
  
   function setMaxPosition(uint32 maxPosition) external onlyOwner {
     _config._maxPosition = maxPosition;
