@@ -27,10 +27,10 @@ contract EverLight is Ownable, IEverLight {
 
   constructor() Ownable() {
     // init the configrations
-    _config._baseFee = 0.01 * 10 ** 18;
+    _config._baseFee = 0.01 * 10 ** 18; // 28 matic
     _config._incrPerNum = 256;
     _config._incrFee = 0.01 * 10 ** 18;
-    _config._decrBlockNum = 4096;
+    _config._decrBlockNum = 4096;       // * 7 for matic
     _config._decrFee = 0.01 * 10 ** 18;
     // _config._latestCreateBlock = 0;
     // _config._totalDecrTimes = 0;
@@ -62,7 +62,7 @@ contract EverLight is Ownable, IEverLight {
   }
 
   function queryCharacter(uint256 characterId) external view override returns (address owner, uint32 powerFactor, uint256[] memory tokenList, uint32 totalPower) {
-    (owner, powerFactor, totalPower) = (_characterList[characterId]._owner, _characterList[characterId]._powerFactor, _characterList[characterId]._totalPower);
+    (owner, powerFactor, totalPower) = (/*_characterList[characterId]._owner,*/address(0), _characterList[characterId]._powerFactor, _characterList[characterId]._totalPower);
     
     tokenList = new uint256[](_config._maxPosition);
     for (uint8 i=0; i<_config._maxPosition; ++i) {
@@ -131,7 +131,8 @@ contract EverLight is Ownable, IEverLight {
   }
 
   function wear(uint256 characterId, uint256[] memory tokenList) external override {
-    require(_characterOwnOf(characterId) == tx.origin, "character not owner");
+    //require(_characterOwnOf(characterId) == tx.origin, "character not owner");
+    require(_erc721Proxy.ownerOf(characterId) == tx.origin);
     require(tokenList.length > 0, "Empty token");
     
     // create new character
@@ -144,7 +145,8 @@ contract EverLight is Ownable, IEverLight {
         continue;
       }
 
-      require(_tokenOwnOf(tokenList[i]) == tx.origin, "parts not owner");
+      //require(_tokenOwnOf(tokenList[i]) == tx.origin, "parts not owner");
+      require(_erc721Proxy.ownerOf(tokenList[i]) == tx.origin, "parts !owner");
       require(_tokenList[tokenList[i]]._wearToken == 0, "Token weared");
 
       // wear parts
@@ -171,7 +173,8 @@ contract EverLight is Ownable, IEverLight {
   }
 
   function takeOff(uint256 characterId, uint8[] memory positions) external override {
-    require(_characterOwnOf(characterId) == tx.origin, "Not owner");
+    //require(_characterOwnOf(characterId) == tx.origin, "Not owner");
+    require(_erc721Proxy.ownerOf(characterId) == tx.origin, "!owner");
     require(positions.length > 0, "Empty position");
     
     // create new character
@@ -201,8 +204,11 @@ contract EverLight is Ownable, IEverLight {
   }
 
   function upgradeToken(uint256 firstTokenId, uint256 secondTokenId) external override {
-    require(_tokenOwnOf(firstTokenId) == tx.origin, "Not owner");
-    require(_tokenOwnOf(secondTokenId) == tx.origin, "Not owner");
+    //require(_tokenOwnOf(firstTokenId) == tx.origin, "Not owner");
+    //require(_tokenOwnOf(secondTokenId) == tx.origin, "Not owner");
+
+    require(_erc721Proxy.ownerOf(firstTokenId) == tx.origin, "first !owner");
+    require(_erc721Proxy.ownerOf(secondTokenId) == tx.origin, "second !owner");
 
     // check pats can upgrade
     require(keccak256(bytes(_tokenList[firstTokenId]._name)) == keccak256(bytes(_tokenList[secondTokenId]._name)), "Conflict token");
@@ -220,7 +226,7 @@ contract EverLight is Ownable, IEverLight {
 
     // create new parts
     uint256 newTokenId = ++_config._currentTokenId;
-    _tokenList[newTokenId] = LibEverLight.TokenInfo(newTokenId, tx.origin, _tokenList[firstTokenId]._position, _tokenList[firstTokenId]._rare,
+    _tokenList[newTokenId] = LibEverLight.TokenInfo(newTokenId, /*tx.origin,*/ _tokenList[firstTokenId]._position, _tokenList[firstTokenId]._rare,
                                                     _tokenList[firstTokenId]._name, _tokenList[firstTokenId]._suitId, basePower + randPower,
                                                     _tokenList[firstTokenId]._level + 1, false, 0);
 
@@ -235,8 +241,10 @@ contract EverLight is Ownable, IEverLight {
   }
 
   function upgradeWearToken(uint256 characterId, uint256 tokenId) external override {
-    require(_characterOwnOf(characterId) == tx.origin, "Not owner");
-    require(_tokenOwnOf(tokenId) == tx.origin, "Not owner");
+    //require(_characterOwnOf(characterId) == tx.origin, "Not owner");
+    require(_erc721Proxy.ownerOf(characterId) == tx.origin, "!owner");
+    //require(_tokenOwnOf(tokenId) == tx.origin, "Not owner");
+    require(_erc721Proxy.ownerOf(tokenId) == tx.origin, "parts !owner");
 
     uint8 position = _tokenList[tokenId]._position;
     uint256 partsId = _characterList[characterId]._tokenList[position];
@@ -259,7 +267,7 @@ contract EverLight is Ownable, IEverLight {
 
     // create new parts
     uint256 newTokenId = ++_config._currentTokenId;
-    _tokenList[newTokenId] = LibEverLight.TokenInfo(newTokenId, tx.origin, _tokenList[partsId]._position, _tokenList[partsId]._rare,
+    _tokenList[newTokenId] = LibEverLight.TokenInfo(newTokenId, /*tx.origin,*/ _tokenList[partsId]._position, _tokenList[partsId]._rare,
                                                     _tokenList[partsId]._name, _tokenList[partsId]._suitId, basePower + randPower,
                                                     _tokenList[partsId]._level + 1, false, newCharacterId);
 
@@ -301,7 +309,7 @@ contract EverLight is Ownable, IEverLight {
     // mint luck stone 
     for (uint8 i=0; i<count; ++i) {
       uint256 newTokenId = ++_config._currentTokenId;
-      (_tokenList[newTokenId]._tokenId, _tokenList[newTokenId]._owner, _tokenList[newTokenId]._position, _tokenList[newTokenId]._name) = (newTokenId, tx.origin, 99, "Lucky Stone");
+      (_tokenList[newTokenId]._tokenId, _tokenList[newTokenId]._position, _tokenList[newTokenId]._name) = (newTokenId, 99, "Lucky Stone");
 
       _erc721Proxy.mintBy(tx.origin, newTokenId);
     }
@@ -309,7 +317,8 @@ contract EverLight is Ownable, IEverLight {
 
   function useLuckyStone(uint256[] memory tokenId) external override {
     for (uint i=0; i<tokenId.length; ++i) {
-      require(_tokenOwnOf(tokenId[i]) == tx.origin, "Not owner");
+      //require(_tokenOwnOf(tokenId[i]) == tx.origin, "Not owner");
+      require(_erc721Proxy.ownerOf(tokenId[i]) == tx.origin, "stone !owner");
       require(_tokenList[tokenId[i]]._position == 99, "Not lucky stone");
 
       ++_accountList[tx.origin]._luckyNum;
@@ -321,7 +330,8 @@ contract EverLight is Ownable, IEverLight {
   }
 
   function newTokenType(uint256 tokenId, string memory name, uint32 suitId) external override {
-    require(_tokenOwnOf(tokenId) == tx.origin, "Not owner");
+    //require(_tokenOwnOf(tokenId) == tx.origin, "Not owner");
+    require(_erc721Proxy.ownerOf(tokenId) == tx.origin, "!owner");
     require(_tokenList[tokenId]._level == 9, "No permission");
     require(!_tokenList[tokenId]._createFlag, "No permission");
     require(bytes(name).length <= 16, "Error name");
@@ -354,7 +364,7 @@ contract EverLight is Ownable, IEverLight {
                                 _getRandom(uint256(256).toString()) % (_partsInfo._partsPowerList[position][rare] / 10));
 
         // create token information
-        _tokenList[newTokenId] = LibEverLight.TokenInfo(newTokenId, tx.origin, position, rare, name, suitId, 
+        _tokenList[newTokenId] = LibEverLight.TokenInfo(newTokenId, /*tx.origin, */position, rare, name, suitId, 
                                                     _partsInfo._partsPowerList[position][rare] + randPower, 1, false, 0);
 
         _erc721Proxy.mintBy(tx.origin, newTokenId);
@@ -362,7 +372,7 @@ contract EverLight is Ownable, IEverLight {
 
     // update token and charactor information
     uint256 newPartsTokenId = ++_config._currentTokenId;
-    _tokenList[newPartsTokenId] = LibEverLight.TokenInfo(newPartsTokenId, tx.origin, position, rare - 1, _tokenList[tokenId]._name, 
+    _tokenList[newPartsTokenId] = LibEverLight.TokenInfo(newPartsTokenId,/* tx.origin,*/ position, rare - 1, _tokenList[tokenId]._name, 
                                                          _tokenList[tokenId]._suitId, _tokenList[tokenId]._power, 9, true, _tokenList[tokenId]._wearToken);
 
     if (_tokenList[newPartsTokenId]._wearToken != 0) {
@@ -376,13 +386,13 @@ contract EverLight is Ownable, IEverLight {
   }
 
   // internal functions
-  function _characterOwnOf(uint256 tokenId) internal view returns (address) {
+  /*function _characterOwnOf(uint256 tokenId) internal view returns (address) {
     return _characterList[tokenId]._owner;
-  }
+  }*/
 
-  function _tokenOwnOf(uint256 tokenId) internal view returns (address) {
+  /*function _tokenOwnOf(uint256 tokenId) internal view returns (address) {
     return _tokenList[tokenId]._owner;
-  }
+  }*/
 
   function _getRandom(string memory purpose) internal view returns (uint256) {
     return uint256(keccak256(abi.encodePacked(block.timestamp, tx.gasprice, tx.origin, purpose)));
@@ -409,7 +419,7 @@ contract EverLight is Ownable, IEverLight {
                                 _getRandom(uint256(256).toString()) % (_partsInfo._partsPowerList[position][rare] / 10));
 
       // create token information
-      _tokenList[tokenId] = LibEverLight.TokenInfo(tokenId, tx.origin, position, rare, _partsInfo._partsTypeList[position][rare][luckNum]._name,
+      _tokenList[tokenId] = LibEverLight.TokenInfo(tokenId, /*tx.origin,*/ position, rare, _partsInfo._partsTypeList[position][rare][luckNum]._name,
                                                    _partsInfo._partsTypeList[position][rare][luckNum]._suitId, 
                                                    _partsInfo._partsPowerList[position][rare] + randPower, 1, false, 0);
       break;
@@ -423,7 +433,7 @@ contract EverLight is Ownable, IEverLight {
     // create character
     tokenId = ++_config._currentTokenId;
     _characterList[tokenId]._tokenId = tokenId;
-    _characterList[tokenId]._owner = tx.origin;
+    //_characterList[tokenId]._owner = tx.origin;
     _characterList[tokenId]._powerFactor = uint32(_getRandom(uint256(256).toString()) % 30);
 
     // create all random parts for character
@@ -475,7 +485,7 @@ contract EverLight is Ownable, IEverLight {
   }
 
   function _copyCharacter(uint256 oldId, uint256 newId) internal {
-    (_characterList[newId]._tokenId, _characterList[newId]._owner, _characterList[newId]._powerFactor) = (newId, tx.origin, _characterList[oldId]._powerFactor);
+    (_characterList[newId]._tokenId, /*_characterList[newId]._owner,*/ _characterList[newId]._powerFactor) = (newId,/* tx.origin,*/ _characterList[oldId]._powerFactor);
 
     // copy old character's all parts info
     for (uint8 index=0; index<_config._maxPosition; ++index) {

@@ -37,7 +37,7 @@ library LibEverLight {
   
   struct TokenInfo {
     uint256 _tokenId;                           // token id
-    address _owner;                             // owner of token
+    //address _owner;                             // owner of token
     uint8 _position;                            // parts position
     uint8 _rare;                                // rare level 
     string _name;                               // parts name
@@ -55,7 +55,7 @@ library LibEverLight {
 
   struct Character {
     uint256 _tokenId;                           // token id
-    address _owner;                             // owner of character
+    //address _owner;                             // owner of character
     uint32 _powerFactor;                        // power factor of character
     mapping(uint8 => uint256) _tokenList;       // position -> tokenID
     uint32 _totalPower;                         // total power of parts list
