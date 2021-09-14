@@ -501,6 +501,8 @@ contract EverLight is Ownable, IEverLight {
     // copy old character's all parts info
     for (uint8 index=0; index<_config._maxPosition; ++index) {
       _characterList[newId]._tokenList[index] = _characterList[oldId]._tokenList[index];
+      // 
+      _tokenList[_characterList[newId]._tokenList[index]]._wearToken = newId;
     }
   }
 
