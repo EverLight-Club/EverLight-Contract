@@ -25,12 +25,12 @@ contract ERC721Proxy is ERC721Enumerable, Ownable {
 
   }
 
-  function mintBy(address owner, uint256 tokenId) external {
+  function mintBy(address owner, uint256 tokenId) external onlyEverLight {
     require(!_exists(tokenId), 'tokenId exist already');
      _safeMint(owner, tokenId);
   }
 
-  function burnBy(uint256 tokenId) external {
+  function burnBy(uint256 tokenId) external onlyEverLight {
     require(_exists(tokenId), 'tokenId not exist');
      _burn(tokenId);
   }
@@ -80,18 +80,7 @@ contract ERC721Proxy is ERC721Enumerable, Ownable {
   function tokenURIForCharacter(uint256 tokenId) internal view returns (string memory) {
     
     (, uint32 powerFactor, uint256[] memory tokenList, uint32 totalPower) = everLightContract.queryCharacter(tokenId);
-
-    string[25] memory parts;
-    parts[0] = '<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet" viewBox="0 0 350 350"><style>.base { fill: white; font-family: serif; font-size: 14px; } </style><rect width="100%" height="100%" fill="black" /><text x="10" y="20" class="base">';
-    parts[1] = pluck(tokenList[0]);
-    parts[2] = '</text><text x="10" y="40" class="base">';
-    parts[3] = pluck(tokenList[1]);
-    parts[4] = '</text><text x="10" y="60" class="base">';
-    parts[5] = string(abi.encodePacked("totalPower:[", uint256(totalPower).toString(), "]"));
-    parts[6] = '</text></svg>';
-
-    //string[21] memory parts;
-    /*string[] memory parts = new string[](2 * tokenList.length + 1);
+    string[] memory parts = new string[](2 * tokenList.length + 3);
     parts[0] = '<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet" viewBox="0 0 350 350"><style>.base { fill: white; font-family: serif; font-size: 14px; } </style><rect width="100%" height="100%" fill="black" /><text x="10" y="20" class="base">';
     
     uint256 index = 1;
@@ -99,23 +88,29 @@ contract ERC721Proxy is ERC721Enumerable, Ownable {
     for(uint i = 0; i < tokenList.length; i++) {
       yValue = yValue + 20;
       parts[index] = pluck(tokenList[i]);
-      parts[++index] = string(abi.encodePacked('</text><text x="10" y="',yValue.toString(),'" class="base">')); // '</text><text x="10" y="40" class="base">';
-      if(i == (tokenList.length - 1)){
-        parts[++index] = '</text></svg>';
+      index = index + 1;
+      parts[index] = string(abi.encodePacked('</text><text x="10" y="',yValue.toString(),'" class="base">')); // '</text><text x="10" y="40" class="base">';
+      index++;
+    }
+    parts[index] = string(abi.encodePacked("totalPower:[", uint256(totalPower).toString(), "]"));
+    index = index + 1;
+    parts[index] = '</text></svg>';
+
+    string memory output = "";
+    uint n = 0;
+    while(n < parts.length){  // 5
+      if(n % 2 == 0){ // 0, 2, 4, 6, 8
+        output = string(abi.encodePacked(output, parts[n], parts[n+1]));
+      }
+      n = n + 2;
+      if(n == (parts.length - 1)){
+        output = string(abi.encodePacked(output, parts[n]));
         break;
       }
-      index = index + 2;
-    }*/
-
-    string memory output = string(abi.encodePacked(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5], parts[6]));
-    /*for(uint n = 2; n < parts.length; n++){
-
-      output = string(abi.encodePacked(output, parts[n], parts[n+1], parts[n+2], parts[n+3], parts[n+4], parts[n+5]));
-    }*/
-    
-    //string memory output = string(abi.encodePacked(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5], parts[6], parts[7], parts[8]));
-    //output = string(abi.encodePacked(output, parts[9], parts[10], parts[11], parts[12], parts[13], parts[14], parts[15], parts[16]));
-    //output = string(abi.encodePacked(output, parts[17], parts[18], parts[19], parts[20]));
+      if(n >= parts.length){
+        break;
+      } 
+    }
     return output;
   }
 
