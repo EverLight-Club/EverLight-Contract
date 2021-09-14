@@ -94,6 +94,16 @@ contract EverLight is Ownable, IEverLight {
     return _partsInfo._nameFlag[uint256(keccak256(abi.encodePacked(name)))];
   }
 
+  function queryCharacterExtra(uint256 characterId, uint256 extraKey) external view returns (string memory) {
+    require(_erc721Proxy.ownerOf(characterId) == tx.origin, "!owner");
+    return _characterList[characterId]._extraList[extraKey];
+  }
+
+  function setCharacterExtra(uint256 characterId, uint256 extraKey, string memory extraValue) external {
+    require(_erc721Proxy.ownerOf(characterId) == tx.origin, "!owner");
+    _characterList[characterId]._extraList[extraKey] = extraValue;
+  }
+
   function mint() external override payable {
     // one address can only apply once
     require(!_accountList[tx.origin]._creationFlag, "Only once");

@@ -55,10 +55,11 @@ library LibEverLight {
 
   struct Character {
     uint256 _tokenId;                           // token id
-    //address _owner;                             // owner of character
+    //address _owner;                           // owner of character
     uint32 _powerFactor;                        // power factor of character
     mapping(uint8 => uint256) _tokenList;       // position -> tokenID
     uint32 _totalPower;                         // total power of parts list
+    mapping(uint256 => string) _extraList;      // 
   }
 
 
