@@ -27,11 +27,11 @@ contract EverLight is Ownable, IEverLight {
 
   constructor() Ownable() {
     // init the configrations
-    _config._baseFee = 0.01 * 10 ** 18; // 28 matic
-    _config._incrPerNum = 256;
-    _config._incrFee = 0.01 * 10 ** 18;
-    _config._decrBlockNum = 4096;       // * 7 for matic
-    _config._decrFee = 0.01 * 10 ** 18;
+    _config._baseFee = 25 * 10 ** 18; // 25 matic
+    _config._incrPerNum = 1792;        // eth: 256, matic: 1792
+    _config._incrFee = 25 * 10 ** 18; 
+    _config._decrBlockNum = 28672;       // eth: 4096, matic: 28672
+    _config._decrFee = 25 * 10 ** 18;
     // _config._latestCreateBlock = 0;
     // _config._totalDecrTimes = 0;
     // _config._totalCreateNum = 0;
@@ -61,13 +61,18 @@ contract EverLight is Ownable, IEverLight {
     account = _accountList[owner];
   }
 
-  function queryCharacter(uint256 characterId) external view override returns (address owner, uint32 powerFactor, uint256[] memory tokenList, uint32 totalPower) {
-    (owner, powerFactor, totalPower) = (/*_characterList[characterId]._owner,*/address(0), _characterList[characterId]._powerFactor, _characterList[characterId]._totalPower);
+  function queryCharacter(uint256 characterId) external view override returns (uint256 tokenId, uint32 powerFactor, uint256[] memory tokenList, uint32 totalPower) {
+    (tokenId, powerFactor, totalPower) = (_characterList[characterId]._tokenId, _characterList[characterId]._powerFactor, _characterList[characterId]._totalPower);
     
     tokenList = new uint256[](_config._maxPosition);
     for (uint8 i=0; i<_config._maxPosition; ++i) {
       tokenList[i] = _characterList[characterId]._tokenList[i];
     }
+  }
+
+  function queryBaseInfo() external view override returns (uint256 baseFee, uint32 incrPerNum, uint256 incrFee, 
+                                      uint32 decrBlockNum, uint256 decrFee, uint256 lastestCreateBlock, uint32 totalSuitNum) {
+    (baseFee, incrPerNum, incrFee, decrBlockNum, decrFee, lastestCreateBlock, totalSuitNum) = (_config._baseFee, _config._incrPerNum, _config._incrFee, _config._decrBlockNum, _config._decrFee, _config._latestCreateBlock, _config._totalSuitNum);
   }
 
   function queryToken(uint256 tokenId) external view override returns (LibEverLight.TokenInfo memory tokenInfo) {
@@ -221,10 +226,10 @@ contract EverLight is Ownable, IEverLight {
     require(_erc721Proxy.ownerOf(secondTokenId) == tx.origin, "second !owner");
 
     // check pats can upgrade
-    require(keccak256(bytes(_tokenList[firstTokenId]._name)) == keccak256(bytes(_tokenList[secondTokenId]._name)), "Conflict token");
-    require(_tokenList[firstTokenId]._level == _tokenList[secondTokenId]._level, "Conflict token");
-    require(_tokenList[firstTokenId]._position == _tokenList[secondTokenId]._position, "Conflict token");
-    require(_tokenList[firstTokenId]._rare == _tokenList[secondTokenId]._rare, "Conflict token");
+    require(keccak256(bytes(_tokenList[firstTokenId]._name)) == keccak256(bytes(_tokenList[secondTokenId]._name)), "!name");
+    require(_tokenList[firstTokenId]._level == _tokenList[secondTokenId]._level, "!level");
+    require(_tokenList[firstTokenId]._position == _tokenList[secondTokenId]._position, "!position");
+    require(_tokenList[firstTokenId]._rare == _tokenList[secondTokenId]._rare, "!rare");
     require(_tokenList[firstTokenId]._level < 9, "Max level");
     
     require(_tokenList[firstTokenId]._wearToken == 0, "Weared token");
@@ -538,10 +543,6 @@ contract EverLight is Ownable, IEverLight {
   }
 
   // governace functions
-  /*function setELWTAddress(address tokenAddress) external onlyOwner {
-    _erc721Proxy = IERC721Proxy(tokenAddress);
-  }*/
-
   function withdraw() external onlyOwner {
     payable(msg.sender).transfer(address(this).balance);
   }

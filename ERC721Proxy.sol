@@ -87,7 +87,7 @@ contract ERC721Proxy is ERC721Enumerable, Ownable {
     uint256 yValue = 20;
     for(uint i = 0; i < tokenList.length; i++) {
       yValue = yValue + 20;
-      parts[index] = pluck(tokenList[i]);
+      parts[index] = pluck(tokenList[i], uint8(i));
       index = index + 1;
       parts[index] = string(abi.encodePacked('</text><text x="10" y="',yValue.toString(),'" class="base">')); // '</text><text x="10" y="40" class="base">';
       index++;
@@ -117,14 +117,22 @@ contract ERC721Proxy is ERC721Enumerable, Ownable {
   function tokenURIForParts(uint256 tokenId) internal view returns (string memory) {
     string[3] memory parts;
     parts[0] = '<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet" viewBox="0 0 350 350"><style>.base { fill: white; font-family: serif; font-size: 14px; } </style><rect width="100%" height="100%" fill="black" /><text x="10" y="20" class="base">';
-    parts[1] = pluck(tokenId);
+    parts[1] = pluck(tokenId, 0);
     parts[2] = '</text></svg>';
   
     return string(abi.encodePacked(parts[0], parts[1], parts[2]));
   }
 
-  function pluck(uint256 tokenId) internal view returns (string memory output) {
+  function pluck(uint256 tokenId, uint8 position) internal view returns (string memory output) {
     LibEverLight.TokenInfo memory tokenInfo = everLightContract.queryToken(tokenId);
+    if(tokenInfo._tokenId == 0){
+      output = string(abi.encodePacked(uint256(position).toString(), ":?"));
+      return output;
+    }
+    if(tokenInfo._position == 99){
+      output = string(abi.encodePacked(uint256(tokenInfo._position).toString(), ":", tokenInfo._name));
+      return output;
+    }
     if(tokenInfo._createFlag) {
       output = string(abi.encodePacked(uint256(tokenInfo._position).toString(), ":", tokenInfo._name, "(+", uint256(tokenInfo._level).toString(), "E)[", uint256(tokenInfo._power).toString(), "]"));
     } else {

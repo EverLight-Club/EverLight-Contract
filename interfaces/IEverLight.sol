@@ -10,12 +10,15 @@ interface IEverLight {
   // read function list
   function queryColorByRare(uint8 rare) external view returns (string memory color);
 
+  function queryBaseInfo() external view returns (uint256 baseFee, uint32 incrPerNum, uint256 incrFee, 
+                                      uint32 decrBlockNum, uint256 decrFee, uint256 lastestCreateBlock, uint32 totalSuitNum);
+
   function queryAccount(address owner) external view returns (LibEverLight.Account memory account);
 
   // returns the type for tokenId(1 charactor, 2 parts, 3 lucklyStone)
   function queryTokenType(uint256 tokenId) external view returns (uint8 tokenType);
   
-  function queryCharacter(uint256 characterId) external view returns (address owner, uint32 powerFactor, uint256[] memory tokenList, uint32 totalPower);
+  function queryCharacter(uint256 characterId) external view returns (uint256 tokenId, uint32 powerFactor, uint256[] memory tokenList, uint32 totalPower);
 
   function queryToken(uint256 tokenId) external view returns (LibEverLight.TokenInfo memory tokenInfo);
 
